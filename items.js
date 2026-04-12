@@ -1,8 +1,9 @@
 // items.js
+
 // Helper to create items for a group
 function createItems(groupId, baseLabel, count) {
-  const items = [];
-  for (let i = 1; i <= count; i++) {
+  var items = [];
+  for (var i = 1; i <= count; i++) {
     items.push({
       id: groupId + "_i" + i,
       label: baseLabel + " " + i
@@ -11,7 +12,7 @@ function createItems(groupId, baseLabel, count) {
   return items;
 }
 
-const GROUPS_DATA = [];
+var GROUPS_DATA = [];
 
 // 1. Sports
 GROUPS_DATA.push({
@@ -49,7 +50,7 @@ GROUPS_DATA.push({
 });
 
 // Extra group titles to reach 45 total groups
-const EXTRA_GROUP_TITLES = [
+var EXTRA_GROUP_TITLES = [
   "Fruits",
   "Vegetables",
   "Musical Instruments",
@@ -89,13 +90,14 @@ const EXTRA_GROUP_TITLES = [
   "Minerals",
   "Languages",
   "Mythological Figures",
-  "Islands"
+  "Islands",
+  "Metals"
 ];
 
-// Start from g6 because g1–g5 are used
-for (let i = 0; i < EXTRA_GROUP_TITLES.length; i++) {
-  const groupId = "g" + (6 + i);
-  const title = EXTRA_GROUP_TITLES[i];
+// Add groups g6–g45
+for (var i = 0; i < EXTRA_GROUP_TITLES.length; i++) {
+  var groupId = "g" + (6 + i);
+  var title = EXTRA_GROUP_TITLES[i];
   GROUPS_DATA.push({
     id: groupId,
     title: title,
