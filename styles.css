@@ -43,7 +43,7 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(45, minmax(16px, 1fr));
+  grid-template-columns: repeat(5, minmax(20px, 1fr));
   gap: 4px;
 }
 
