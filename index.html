@@ -1,16 +1,89 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-  <style>
-  img {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-</style>
+  <meta charset="UTF-8" />
+  <title>Connections on Steroids</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<title> Erik Borgehammar's About Me Page </title>
-<body style="background-color:#fabee4;">
-  <h1 style="text-align:center;"> About Me </h1>
-  <p style="text-align:center;"> From a young age, I was interested in grasshoppers. I would lie under the stars in my rural hometown and listen to the crickets chirp. </p>
-  <img src="Erik_Picture.jpg" alt="A picture of young Erik" height="350">
+<body>
+  <div id="app">
+    <div class="top-bar">
+      <div class="legend">
+        <span>Score: {{ score }}</span>
+        <span>Mistakes: {{ mistakes }}</span>
+      </div>
+      <button class="reshuffle-btn" @click="reshuffle">Reshuffle</button>
+    </div>
+
+    <div class="grid">
+      <div
+        v-for="cell in cells"
+        :key="cell.index"
+        :class="cellClass(cell)"
+        @click="handleCellClick(cell)"
+      >
+        <!-- Empty -->
+        <template v-if="cell.type === null"></template>
+
+        <!-- Item -->
+        <template v-else-if="cell.type === 'item'">
+          {{ itemsById[cell.itemId].label }}
+        </template>
+
+        <!-- Group -->
+        <template v-else-if="cell.type === 'group'">
+          <div class="group-preview-items">
+            <span
+              v-for="(itemId, idx) in groupPreviewItems(cell.groupId)"
+              :key="itemId"
+              class="group-preview-item"
+            >
+              {{ itemsById[itemId].label }}
+            </span>
+          </div>
+          <div v-if="groupHasMore(cell.groupId)" class="group-preview-more">...</div>
+          <div v-if="groupsById[cell.groupId].completed" class="group-title">
+            {{ groupsById[cell.groupId].title }}
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Group modal -->
+    <div
+      v-if="activeGroupModalId !== null"
+      class="modal-backdrop"
+      @click="closeGroupModal"
+    >
+      <div class="modal" @click.stop>
+        <h2>{{ groupsById[activeGroupModalId].title }}</h2>
+        <ul>
+          <li
+            v-for="itemId in groupsById[activeGroupModalId].itemIds"
+            :key="itemId"
+          >
+            {{ itemsById[itemId].label }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Win overlay -->
+    <div
+      v-if="winShown"
+      class="win-overlay"
+      @click="winShown = false"
+    >
+      CONGRATULATIONS, YOU HAVE WON
+    </div>
+  </div>
+
+  <script src="items.js"></script>
+  <script src="app.js"></script>
 </body>
+</html>
