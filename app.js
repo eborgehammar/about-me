@@ -44,8 +44,8 @@ createApp({
 
         allItemIds = allItemIds.concat(itemIds);
       });
-
-      const totalCells = 45 * 45;
+      //TODO CHANGE SIZE FOR 2025
+      const totalCells = 5 * 5;
 
       // Shuffle items
       for (let i = allItemIds.length - 1; i > 0; i--) {
@@ -95,7 +95,7 @@ createApp({
         if (cell.type === "group") {
             this.activeGroupModalId = cell.groupId;
         }
-    }
+    },
 
 
     handleGroupCellClick(cell) {
@@ -159,7 +159,7 @@ createApp({
       }
   
       this.score += 1;
-    }
+    },
 
     mergeGroups(indexA, indexB, groupId) {
         const group = this.groupsById[groupId];
@@ -180,7 +180,7 @@ createApp({
             group.completed = true;
             this.checkWinCondition();
         }
-    }
+    },
 
 
     handleItemCellClick(cell) {
@@ -280,7 +280,8 @@ createApp({
     },
 
     compactBoard() {
-      const SIZE = 45;
+      //TODO CHANGE SIZE FOR 2025
+      const SIZE = 5;
 
       // Convert to matrix
       const matrix = [];
