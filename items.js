@@ -1,106 +1,80 @@
-// items.js
+// items.js — 5 groups × 5 items for testing
 
-// Helper to create items for a group
-function createItems(groupId, baseLabel, count) {
+var GROUPS_DATA = [];
+
+// Helper to create items
+function make(groupId, labels) {
   var items = [];
-  for (var i = 1; i <= count; i++) {
+  for (var i = 0; i < labels.length; i++) {
     items.push({
-      id: groupId + "_i" + i,
-      label: baseLabel + " " + i
+      id: groupId + "_i" + (i + 1),
+      label: labels[i]
     });
   }
   return items;
 }
 
-var GROUPS_DATA = [];
-
-// 1. Sports
+// 1. Tech Companies
 GROUPS_DATA.push({
   id: "g1",
-  title: "Sports",
-  items: createItems("g1", "Sport", 45)
+  title: "Tech Companies",
+  items: make("g1", [
+    "Apple",
+    "Microsoft",
+    "Google",
+    "Meta",
+    "Netflix"
+  ])
 });
 
-// 2. Lord of the Rings Companies (generic, non-copyrighted)
+// 2. Sports
 GROUPS_DATA.push({
   id: "g2",
-  title: "Lord of the Rings Companies",
-  items: createItems("g2", "Middle-Earth Co.", 45)
+  title: "Sports",
+  items: make("g2", [
+    "Soccer",
+    "Baseball",
+    "Football",
+    "Pickleball",
+    "Tennis"
+  ])
 });
 
-// 3. Prefixes
+// 3. Elements
 GROUPS_DATA.push({
   id: "g3",
-  title: "Prefixes",
-  items: createItems("g3", "Prefix", 45)
+  title: "Elements",
+  items: make("g3", [
+    "Nitrogen",
+    "Oxygen",
+    "Carbon",
+    "Helium",
+    "Neon"
+  ])
 });
 
-// 4. Suffixes
+// 4. Building Materials
 GROUPS_DATA.push({
   id: "g4",
-  title: "Suffixes",
-  items: createItems("g4", "Suffix", 45)
+  title: "Building Materials",
+  items: make("g4", [
+    "Wood",
+    "Stone",
+    "Concrete",
+    "Rebar",
+    "Metal"
+  ])
 });
 
-// 5. Tech Companies
+// 5. Soccer Players
 GROUPS_DATA.push({
   id: "g5",
-  title: "Tech Companies",
-  items: createItems("g5", "TechCo", 45)
+  title: "Soccer Players",
+  items: make("g5", [
+    "Messi",
+    "Ronaldo",
+    "Vitinha",
+    "Haaland",
+    "Semenyo"
+  ])
 });
-
-// Extra group titles to reach 45 total groups
-var EXTRA_GROUP_TITLES = [
-  "Fruits",
-  "Vegetables",
-  "Musical Instruments",
-  "Planets and Stars",
-  "Bird Species",
-  "Dog Breeds",
-  "Cat Breeds",
-  "Car Models",
-  "Board Games",
-  "Card Games",
-  "Programming Terms",
-  "Mathematical Concepts",
-  "Historical Eras",
-  "Famous Scientists",
-  "Famous Cities",
-  "Mountains",
-  "Rivers",
-  "Flowers",
-  "Trees",
-  "Colors",
-  "Shapes",
-  "Occupations",
-  "Cooking Ingredients",
-  "Desserts",
-  "Beverages",
-  "Tools",
-  "Household Items",
-  "Furniture",
-  "Clothing Items",
-  "Hobbies",
-  "Emotions",
-  "Weather Terms",
-  "Geometric Figures",
-  "Transportation",
-  "Fantasy Creatures",
-  "Spacecraft",
-  "Minerals",
-  "Languages",
-  "Mythological Figures",
-  "Islands",
-  "Metals"
-];
-
-// Add groups g6–g45
-for (var i = 0; i < EXTRA_GROUP_TITLES.length; i++) {
-  var groupId = "g" + (6 + i);
-  var title = EXTRA_GROUP_TITLES[i];
-  GROUPS_DATA.push({
-    id: groupId,
-    title: title,
-    items: createItems(groupId, title + " Item", 45)
-  });
-}
