@@ -92,11 +92,89 @@ createApp({
     },
 
     handleGroupCellClick(cell) {
-      if (this.selectedItemCellIndexes.length > 0) return;
+      if (this.selectedItemCellIndexes.length > 1) return;
 
+      // If a group tile is selected and this is the same group, merge groups
+      if (this.selectedGroupCellIndex !== null) {
+          const otherCell = this.cells[this.selectedGroupCellIndex];
+      
+          if (otherCell.groupId === cell.groupId) {
+              this.mergeGroups(otherCell.index, cell.index, cell.groupId);
+              this.selectedGroupCellIndex = null;
+              return;
+          }
+      }
+
+      // If exactly one item is selected, try to merge it into this group
+      if (this.selectedItemCellIndexes.length === 1) {
+          const itemCellIndex = this.selectedItemCellIndexes[0];
+          const itemCell = this.cells[itemCellIndex];
+          const item = this.itemsById[itemCell.itemId];
+          const group = this.groupsById[cell.groupId];
+  
+        if (item.groupId === group.id) {
+            // Valid merge
+            this.mergeItemIntoGroup(item, itemCellIndex, group);
+            this.selectedItemCellIndexes = [];
+            return;
+        } else {
+            // Mismatch
+            this.mistakes += 1;
+            this.selectedItemCellIndexes = [];
+            return;
+        }
+      }
+
+      
       const group = this.groupsById[cell.groupId];
       this.activeGroupModalId = group.id;
     },
+
+    mergeItemIntoGroup(item, itemCellIndex, group) {
+      // Remove item from board
+      this.cells[itemCellIndex] = {
+          index: itemCellIndex,
+          type: null,
+          itemId: null,
+          groupId: null
+      };
+  
+      // Track merged items
+      if (!group.mergedItemIds.includes(item.id)) {
+          group.mergedItemIds.push(item.id);
+      }
+  
+      this.compactBoard();
+  
+      if (this.isGroupFullyMerged(group.id)) {
+          group.completed = true;
+          this.checkWinCondition();
+      }
+  
+      this.score += 1;
+    }
+
+    mergeGroups(indexA, indexB, groupId) {
+        const group = this.groupsById[groupId];
+    
+        // Remove second group tile
+        this.cells[indexB] = {
+            index: indexB,
+            type: null,
+            itemId: null,
+            groupId: null
+        };
+    
+        // Compact board
+        this.compactBoard();
+    
+        // If all items merged, complete group
+        if (this.isGroupFullyMerged(groupId)) {
+            group.completed = true;
+            this.checkWinCondition();
+        }
+    }
+
 
     handleItemCellClick(cell) {
       const idx = cell.index;
