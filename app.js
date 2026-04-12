@@ -91,6 +91,13 @@ createApp({
       }
     },
 
+    handleCellDoubleClick(cell) {
+        if (cell.type === "group") {
+            this.activeGroupModalId = cell.groupId;
+        }
+    }
+
+
     handleGroupCellClick(cell) {
       if (this.selectedItemCellIndexes.length > 1) return;
 
