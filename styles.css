@@ -43,8 +43,10 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(20px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(60px, 1fr));
+  gap: 10px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .cell {
