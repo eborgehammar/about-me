@@ -64,7 +64,11 @@
         <h2>{{ groupsById[activeGroupModalId].title }}</h2>
         <ul>
           <li
-            v-for="itemId in groupsById[activeGroupModalId].itemIds"
+            <li v-for="itemId in (
+            groupsById[activeGroupModalId].completed
+              ? groupsById[activeGroupModalId].itemIds
+              : groupsById[activeGroupModalId].mergedItemIds
+            )"
             :key="itemId"
           >
             {{ itemsById[itemId].label }}
