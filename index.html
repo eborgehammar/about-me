@@ -26,6 +26,7 @@
         :key="cell.index"
         :class="cellClass(cell)"
         @click="handleCellClick(cell)"
+        @dblclick="handleCellDoubleClick(cell)"
       >
         <!-- Empty -->
         <template v-if="cell.type === null"></template>
