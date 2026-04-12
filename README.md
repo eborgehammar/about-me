@@ -1,3 +1,3 @@
-# about-me
+# 2025 game clone
 
-Test GitHub Pages for hosting a simple HTML/CSS (maybe some javascript as well) about me page
+2025 game with changeable categories/items
