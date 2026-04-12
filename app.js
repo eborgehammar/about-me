@@ -36,7 +36,8 @@ createApp({
         groupsById[group.id] = {
           id: group.id,
           title: group.title,
-          itemIds,
+          itemIds: itemIds,
+          mergedItemIds: [],
           anchorCellIndex: null,
           completed: false,
         };
@@ -137,6 +138,13 @@ createApp({
       const groupId = item1.groupId;
       const group = this.groupsById[groupId];
 
+      if (!group.mergedItemIds.includes(item1.id)) {
+        group.mergedItemIds.push(item1.id);
+      }
+      if (!group.mergedItemIds.includes(item2.id)) {
+        group.mergedItemIds.push(item2.id);
+      }
+
       if (group.anchorCellIndex === null) {
         group.anchorCellIndex = index1;
         this.cells[index1] = {
@@ -175,11 +183,11 @@ createApp({
     },
 
     groupPreviewItems(groupId) {
-      return this.groupsById[groupId].itemIds.slice(0, 3);
+      return this.groupsById[groupId].mergedItemIds.slice(0, 3);
     },
 
     groupHasMore(groupId) {
-      return this.groupsById[groupId].itemIds.length > 3;
+      return this.groupsById[groupId].mergedItemIds.length > 3;
     },
 
     closeGroupModal() {
