@@ -2,14 +2,19 @@
 
 const { createApp } = Vue;
 
+const BOARD_SIZE = 5;              // <-- change to 45 for full game
+const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
+
 createApp({
   data() {
     const { itemsById, groupsById, cells } = this.initializeFromGroupsData();
     return {
       itemsById,
-      groupsById,
+      groupsById,          // category definitions
+      groupTiles: {},      // actual group tiles on board
       cells,
       selectedItemCellIndexes: [],
+      selectedGroupCellIndex: null,
       score: 0,
       mistakes: 0,
       activeGroupModalId: null,
@@ -18,6 +23,9 @@ createApp({
   },
 
   methods: {
+    // ------------------------------------------------------------
+    // INITIALIZATION
+    // ------------------------------------------------------------
     initializeFromGroupsData() {
       const itemsById = {};
       const groupsById = {};
@@ -28,7 +36,7 @@ createApp({
           itemsById[item.id] = {
             id: item.id,
             label: item.label,
-            groupId: group.id,
+            categoryId: group.id,
           };
           return item.id;
         });
@@ -36,16 +44,11 @@ createApp({
         groupsById[group.id] = {
           id: group.id,
           title: group.title,
-          itemIds: itemIds,
-          mergedItemIds: [],
-          anchorCellIndex: null,
-          completed: false,
+          itemIds,
         };
 
         allItemIds = allItemIds.concat(itemIds);
       });
-      //TODO CHANGE SIZE FOR 2025
-      const totalCells = 5 * 5;
 
       // Shuffle items
       for (let i = allItemIds.length - 1; i > 0; i--) {
@@ -53,20 +56,25 @@ createApp({
         [allItemIds[i], allItemIds[j]] = [allItemIds[j], allItemIds[i]];
       }
 
+      // Fill board
       const cells = [];
-      for (let i = 0; i < totalCells; i++) {
+      for (let i = 0; i < TOTAL_CELLS; i++) {
         const itemId = allItemIds[i] || null;
         cells.push({
           index: i,
           type: itemId ? "item" : null,
           itemId,
-          groupId: null,
+          tileId: null,
+          categoryId: itemId ? itemsById[itemId].categoryId : null,
         });
       }
 
       return { itemsById, groupsById, cells };
     },
 
+    // ------------------------------------------------------------
+    // CELL CLASSES
+    // ------------------------------------------------------------
     cellClass(cell) {
       if (cell.type === null) return ["cell", "empty"];
       if (cell.type === "item") {
@@ -74,12 +82,15 @@ createApp({
         return ["cell", "item", selected ? "selected" : ""];
       }
       if (cell.type === "group") {
-        const group = this.groupsById[cell.groupId];
-        return ["cell", "group", group.completed ? "completed" : ""];
+        const tile = this.groupTiles[cell.tileId];
+        return ["cell", "group", tile.completed ? "completed" : ""];
       }
       return ["cell"];
     },
 
+    // ------------------------------------------------------------
+    // CLICK HANDLING
+    // ------------------------------------------------------------
     handleCellClick(cell) {
       if (cell.type === null) return;
       if (this.winShown) return;
@@ -92,97 +103,55 @@ createApp({
     },
 
     handleCellDoubleClick(cell) {
-        if (cell.type === "group") {
-            this.activeGroupModalId = cell.groupId;
-        }
+      if (cell.type === "group") {
+        this.activeGroupModalId = cell.tileId;
+      }
     },
 
-
+    // ------------------------------------------------------------
+    // GROUP TILE CLICK
+    // ------------------------------------------------------------
     handleGroupCellClick(cell) {
-      if (this.selectedItemCellIndexes.length > 1) return;
+      const tile = this.groupTiles[cell.tileId];
 
-      // If a group tile is selected and this is the same group, merge groups
-      if (this.selectedGroupCellIndex !== null) {
-          const otherCell = this.cells[this.selectedGroupCellIndex];
-      
-          if (otherCell.groupId === cell.groupId) {
-              this.mergeGroups(otherCell.index, cell.index, cell.groupId);
-              this.selectedGroupCellIndex = null;
-              return;
-          }
-      }
-
-      // If exactly one item is selected, try to merge it into this group
+      // If exactly one item selected → merge item into this tile
       if (this.selectedItemCellIndexes.length === 1) {
-          const itemCellIndex = this.selectedItemCellIndexes[0];
-          const itemCell = this.cells[itemCellIndex];
-          const item = this.itemsById[itemCell.itemId];
-          const group = this.groupsById[cell.groupId];
-  
-        if (item.groupId === group.id) {
-            // Valid merge
-            this.mergeItemIntoGroup(item, itemCellIndex, group);
-            this.selectedItemCellIndexes = [];
-            return;
+        const itemCellIndex = this.selectedItemCellIndexes[0];
+        const itemCell = this.cells[itemCellIndex];
+        const item = this.itemsById[itemCell.itemId];
+
+        if (item.categoryId === tile.categoryId) {
+          this.mergeItemIntoTile(item, itemCellIndex, tile);
         } else {
-            // Mismatch
-            this.mistakes += 1;
-            this.selectedItemCellIndexes = [];
-            return;
+          this.mistakes += 1;
         }
+
+        this.selectedItemCellIndexes = [];
+        return;
       }
 
-      
-      const group = this.groupsById[cell.groupId];
-      this.activeGroupModalId = group.id;
-    },
-
-    mergeItemIntoGroup(item, itemCellIndex, group) {
-      // Remove item from board
-      this.cells[itemCellIndex] = {
-          index: itemCellIndex,
-          type: null,
-          itemId: null,
-          groupId: null
-      };
-  
-      // Track merged items
-      if (!group.mergedItemIds.includes(item.id)) {
-          group.mergedItemIds.push(item.id);
+      // If selecting a group tile
+      if (this.selectedGroupCellIndex === null) {
+        this.selectedGroupCellIndex = cell.index;
+        return;
       }
-  
-      this.compactBoard();
-  
-      if (this.isGroupFullyMerged(group.id)) {
-          group.completed = true;
-          this.checkWinCondition();
+
+      // If clicking another group tile → merge tiles if same category
+      const otherCell = this.cells[this.selectedGroupCellIndex];
+      const otherTile = this.groupTiles[otherCell.tileId];
+
+      if (otherTile.categoryId === tile.categoryId) {
+        this.mergeTiles(otherTile, tile);
+      } else {
+        this.mistakes += 1;
       }
-  
-      this.score += 1;
+
+      this.selectedGroupCellIndex = null;
     },
 
-    mergeGroups(indexA, indexB, groupId) {
-        const group = this.groupsById[groupId];
-    
-        // Remove second group tile
-        this.cells[indexB] = {
-            index: indexB,
-            type: null,
-            itemId: null,
-            groupId: null
-        };
-    
-        // Compact board
-        this.compactBoard();
-    
-        // If all items merged, complete group
-        if (this.isGroupFullyMerged(groupId)) {
-            group.completed = true;
-            this.checkWinCondition();
-        }
-    },
-
-
+    // ------------------------------------------------------------
+    // ITEM CLICK
+    // ------------------------------------------------------------
     handleItemCellClick(cell) {
       const idx = cell.index;
 
@@ -201,6 +170,9 @@ createApp({
       }
     },
 
+    // ------------------------------------------------------------
+    // ITEM + ITEM MERGE
+    // ------------------------------------------------------------
     resolveSelection() {
       const [i1, i2] = this.selectedItemCellIndexes;
       const cell1 = this.cells[i1];
@@ -209,8 +181,8 @@ createApp({
       const item1 = this.itemsById[cell1.itemId];
       const item2 = this.itemsById[cell2.itemId];
 
-      if (item1.groupId === item2.groupId) {
-        this.mergeItems(item1, item2, i1, i2);
+      if (item1.categoryId === item2.categoryId) {
+        this.mergeItemsIntoNewTile(item1, item2, i1, i2);
         this.score += 1;
       } else {
         this.mistakes += 1;
@@ -219,71 +191,132 @@ createApp({
       this.selectedItemCellIndexes = [];
     },
 
-    mergeItems(item1, item2, index1, index2) {
-      const groupId = item1.groupId;
-      const group = this.groupsById[groupId];
+    // ------------------------------------------------------------
+    // CREATE NEW TILE FROM TWO ITEMS
+    // ------------------------------------------------------------
+    mergeItemsIntoNewTile(item1, item2, index1, index2) {
+      const tileId = "tile_" + Date.now() + "_" + Math.random();
+      const categoryId = item1.categoryId;
 
-      if (!group.mergedItemIds.includes(item1.id)) {
-        group.mergedItemIds.push(item1.id);
-      }
-      if (!group.mergedItemIds.includes(item2.id)) {
-        group.mergedItemIds.push(item2.id);
-      }
+      this.groupTiles[tileId] = {
+        tileId,
+        categoryId,
+        mergedItemIds: [item1.id, item2.id],
+        anchorCellIndex: index1,
+        completed: false,
+      };
 
-      if (group.anchorCellIndex === null) {
-        group.anchorCellIndex = index1;
-        this.cells[index1] = {
-          index: index1,
-          type: "group",
-          groupId,
-          itemId: null,
-        };
-      }
+      // Convert index1 into group tile
+      this.cells[index1] = {
+        index: index1,
+        type: "group",
+        tileId,
+        categoryId,
+      };
 
+      // Remove index2
       this.cells[index2] = {
         index: index2,
         type: null,
         itemId: null,
-        groupId: null,
+        tileId: null,
+        categoryId: null,
       };
 
       this.compactBoard();
+      this.checkTileCompletion(tileId);
+    },
 
-      if (this.isGroupFullyMerged(groupId)) {
-        group.completed = true;
+    // ------------------------------------------------------------
+    // MERGE ITEM INTO EXISTING TILE
+    // ------------------------------------------------------------
+    mergeItemIntoTile(item, itemCellIndex, tile) {
+      // Remove item from board
+      this.cells[itemCellIndex] = {
+        index: itemCellIndex,
+        type: null,
+        itemId: null,
+        tileId: null,
+        categoryId: null,
+      };
+
+      if (!tile.mergedItemIds.includes(item.id)) {
+        tile.mergedItemIds.push(item.id);
+      }
+
+      this.compactBoard();
+      this.checkTileCompletion(tile.tileId);
+      this.score += 1;
+    },
+
+    // ------------------------------------------------------------
+    // MERGE TWO TILES
+    // ------------------------------------------------------------
+    mergeTiles(tileA, tileB) {
+      // Merge item lists
+      tileA.mergedItemIds = [...new Set([...tileA.mergedItemIds, ...tileB.mergedItemIds])];
+
+      // Remove tileB from board
+      const anchor = tileB.anchorCellIndex;
+      this.cells[anchor] = {
+        index: anchor,
+        type: null,
+        itemId: null,
+        tileId: null,
+        categoryId: null,
+      };
+
+      delete this.groupTiles[tileB.tileId];
+
+      this.compactBoard();
+      this.checkTileCompletion(tileA.tileId);
+    },
+
+    // ------------------------------------------------------------
+    // COMPLETION CHECK
+    // ------------------------------------------------------------
+    checkTileCompletion(tileId) {
+      const tile = this.groupTiles[tileId];
+      const category = this.groupsById[tile.categoryId];
+
+      if (tile.mergedItemIds.length === category.itemIds.length) {
+        tile.completed = true;
         this.checkWinCondition();
       }
     },
 
-    isGroupFullyMerged(groupId) {
-      return !this.cells.some(cell =>
-        cell.type === "item" &&
-        this.itemsById[cell.itemId].groupId === groupId
-      );
-    },
-
     checkWinCondition() {
-      const allComplete = Object.values(this.groupsById).every(g => g.completed);
+      const allTiles = Object.values(this.groupTiles);
+      if (allTiles.length === 0) return;
+
+      const allComplete = allTiles.every(t => t.completed);
       if (allComplete) this.winShown = true;
     },
 
-    groupPreviewItems(groupId) {
-      return this.groupsById[groupId].mergedItemIds.slice(0, 3);
+    // ------------------------------------------------------------
+    // GROUP PREVIEW
+    // ------------------------------------------------------------
+    groupPreviewItems(tileId) {
+      return this.groupTiles[tileId].mergedItemIds.slice(0, 3);
     },
 
-    groupHasMore(groupId) {
-      return this.groupsById[groupId].mergedItemIds.length > 3;
+    groupHasMore(tileId) {
+      return this.groupTiles[tileId].mergedItemIds.length > 3;
     },
 
+    // ------------------------------------------------------------
+    // MODAL
+    // ------------------------------------------------------------
     closeGroupModal() {
       this.activeGroupModalId = null;
     },
 
+    // ------------------------------------------------------------
+    // BOARD COMPACTION
+    // ------------------------------------------------------------
     compactBoard() {
-      //TODO CHANGE SIZE FOR 2025
-      const SIZE = 5;
+      const SIZE = BOARD_SIZE;
 
-      // Convert to matrix
       const matrix = [];
       for (let col = 0; col < SIZE; col++) {
         const column = [];
@@ -294,18 +327,19 @@ createApp({
         matrix.push(column);
       }
 
-      // Vertical compression
+      // Vertical
       for (let col = 0; col < SIZE; col++) {
         const nonNull = matrix[col].filter(c => c.type !== null);
         const nulls = Array(SIZE - nonNull.length).fill({
           type: null,
           itemId: null,
-          groupId: null,
+          tileId: null,
+          categoryId: null,
         });
         matrix[col] = [...nonNull, ...nulls];
       }
 
-      // Horizontal compression
+      // Horizontal
       const nonEmptyColumns = matrix.filter(col =>
         col.some(c => c.type !== null)
       );
@@ -313,7 +347,8 @@ createApp({
       const emptyColumn = Array(SIZE).fill({
         type: null,
         itemId: null,
-        groupId: null,
+        tileId: null,
+        categoryId: null,
       });
 
       const newMatrix = [
@@ -321,7 +356,7 @@ createApp({
         ...Array(emptyColumnsNeeded).fill(emptyColumn),
       ];
 
-      // Flatten back
+      // Flatten
       const newCells = [];
       for (let row = 0; row < SIZE; row++) {
         for (let col = 0; col < SIZE; col++) {
@@ -331,24 +366,26 @@ createApp({
             index,
             type: cell.type,
             itemId: cell.itemId,
-            groupId: cell.groupId,
+            tileId: cell.tileId,
+            categoryId: cell.categoryId,
           };
         }
       }
 
-      // Update group anchors
-      Object.values(this.groupsById).forEach(group => {
-        if (group.anchorCellIndex !== null) {
-          const newIndex = newCells.findIndex(
-            c => c.type === "group" && c.groupId === group.id
-          );
-          group.anchorCellIndex = newIndex >= 0 ? newIndex : null;
-        }
+      // Update tile anchors
+      Object.values(this.groupTiles).forEach(tile => {
+        const newIndex = newCells.findIndex(
+          c => c.type === "group" && c.tileId === tile.tileId
+        );
+        tile.anchorCellIndex = newIndex >= 0 ? newIndex : null;
       });
 
       this.cells = newCells;
     },
 
+    // ------------------------------------------------------------
+    // RESHUFFLE
+    // ------------------------------------------------------------
     reshuffle() {
       const activeCells = this.cells.filter(c => c.type !== null);
 
@@ -357,24 +394,25 @@ createApp({
         [activeCells[i], activeCells[j]] = [activeCells[j], activeCells[i]];
       }
 
-      const totalCells = this.cells.length;
       const newCells = [];
 
-      for (let i = 0; i < totalCells; i++) {
+      for (let i = 0; i < TOTAL_CELLS; i++) {
         if (i < activeCells.length) {
           const c = activeCells[i];
           newCells[i] = {
             index: i,
             type: c.type,
             itemId: c.itemId,
-            groupId: c.groupId,
+            tileId: c.tileId,
+            categoryId: c.categoryId,
           };
         } else {
           newCells[i] = {
             index: i,
             type: null,
             itemId: null,
-            groupId: null,
+            tileId: null,
+            categoryId: null,
           };
         }
       }
@@ -382,6 +420,7 @@ createApp({
       this.cells = newCells;
       this.compactBoard();
       this.selectedItemCellIndexes = [];
+      this.selectedGroupCellIndex = null;
       this.activeGroupModalId = null;
     },
   },
