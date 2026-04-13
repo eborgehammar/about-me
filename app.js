@@ -2,7 +2,8 @@
 
 const { createApp } = Vue;
 
-const BOARD_SIZE = 5;              // <-- change to 45 for full game
+// CHANGE THIS FOR BOARD SIZE
+const BOARD_SIZE = 5; 
 const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
 
 createApp({
@@ -286,10 +287,10 @@ createApp({
     },
 
     checkWinCondition() {
-      const allTiles = Object.values(this.groupTiles);
-      if (allTiles.length === 0) return;
+      const tiles = Object.values(this.groupTiles);
+      if (tiles.length === 0) return;
 
-      const allComplete = allTiles.every(t => t.completed);
+      const allComplete = tiles.every(t => t.completed);
       if (allComplete) this.winShown = true;
     },
 
